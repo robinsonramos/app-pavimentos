@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1c2227">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Pavimentos</title>
+<style>
+/* Plan: menú de módulos. Una columna de tarjetas; el módulo activo resalta en ámbar. */
+:root{
+  --paper:#f2f3f0; --surface:#ffffff; --ink:#1c2227; --muted:#5b646d; --line:#d3d8d4; --accent:#b77d00; --accent-soft:#f6e7c1;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif; --body:system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--paper:#13171a;--surface:#1b2125;--ink:#e6e9eb;--muted:#9aa3ab;--line:#2e363c;--accent:#f0b733;--accent-soft:#3a3018;color-scheme:dark}
+}
+:root[data-theme="dark"]{--paper:#13171a;--surface:#1b2125;--ink:#e6e9eb;--muted:#9aa3ab;--line:#2e363c;--accent:#f0b733;--accent-soft:#3a3018;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:720px;margin:0 auto;padding:28px 18px 48px;display:flex;flex-direction:column;gap:22px}
+h1{font-family:var(--display);font-size:40px;line-height:1.05;margin:0;letter-spacing:.01em}
+p{margin:0}.muted{color:var(--muted)}
+header{border-bottom:2px solid var(--ink);padding-bottom:14px;display:flex;flex-direction:column;gap:6px}
+.list{display:flex;flex-direction:column;gap:12px}
+.card{display:flex;flex-direction:column;gap:4px;padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:inherit;text-decoration:none}
+.card h2{font-family:var(--display);font-size:24px;margin:0}
+.card.on{border-left:6px solid var(--accent)}
+.card.on:hover,.card.on:focus-visible{border-color:var(--accent);outline:none;box-shadow:0 0 0 2px var(--accent)}
+.card.off{opacity:.65}
+.tag{align-self:flex-start;font-size:12px;border-radius:999px;padding:2px 10px;background:var(--accent-soft);color:var(--accent)}
+.tag.soon{background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+footer{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Pavimentos</h1>
+    <p class="muted">Calculadoras que muestran el procedimiento paso a paso y explican por qué se usa cada método. Funcionan sin internet.</p>
+  </header>
+  <main class="list">
+    <a class="card on" href="marshall.html">
+      <span class="tag">Disponible</span>
+      <h2>Diseño Marshall</h2>
+      <p class="muted">Mezcla densa en caliente: gravedades, vacíos, estabilidad y flujo, seis gráficas y contenido óptimo de asfalto.</p>
+    </a>
+    <div class="card off" aria-disabled="true">
+      <span class="tag soon">Próximamente</span>
+      <h2>Tránsito</h2>
+      <p class="muted">Factor de equivalencia de carga, factor daño por vehículo y número de ejes equivalentes.</p>
+    </div>
+    <div class="card off" aria-disabled="true">
+      <span class="tag soon">Próximamente</span>
+      <h2>Bases y subbases</h2>
+      <p class="muted">Capas granulares, CBR y control de calidad.</p>
+    </div>
+    <div class="card off" aria-disabled="true">
+      <span class="tag soon">Próximamente</span>
+      <h2>Riegos</h2>
+      <p class="muted">Imprimación y riego de liga: función, ligante y cantidad.</p>
+    </div>
+  </main>
+  <footer>Universidad del Cauca · Pavimentos · segundo corte</footer>
+</div>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>

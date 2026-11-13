@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1c2227">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
 <title>Diseño Marshall</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -122,6 +125,7 @@ ul.sup{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;max
 <div class="wrap">
   <header>
     <div>
+      <p style="margin-bottom:6px"><a href="index.html" style="color:var(--muted);font-size:13px">← Módulos</a></p>
       <h1>Diseño Marshall</h1>
       <div class="sub">Mezcla densa en caliente · Pavimentos, segundo corte · notación del curso (Benavides, FIC)</div>
     </div>
@@ -617,6 +621,7 @@ function renderSup(R){
 
 function renderAll(){ renderInputs(); renderResults(); }
 renderAll();
+if ("serviceWorker" in navigator) { window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {})); }
 </script>
 </body>
 </html>
