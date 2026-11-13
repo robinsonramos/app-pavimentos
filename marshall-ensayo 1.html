@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diseño Marshall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Plan: herramienta de laboratorio. Columna única: datos -> resumen -> gráficas -> tabla -> procedimiento -> supuestos. */
+:root{
+  --paper:#f2f3f0; --surface:#ffffff; --ink:#1c2227; --muted:#5b646d; --line:#d3d8d4;
+  --accent:#b77d00; --accent-soft:#f6e7c1; --fit:#1f5f8b;
+  --ok:#2c7a4b; --ok-soft:#e1f1e7; --bad:#b3261e; --bad-soft:#f9e1df; --band:rgba(44,122,75,.11);
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#13171a; --surface:#1b2125; --ink:#e6e9eb; --muted:#9aa3ab; --line:#2e363c;
+    --accent:#f0b733; --accent-soft:#3a3018; --fit:#74b3e2;
+    --ok:#5cc489; --ok-soft:#1d3327; --bad:#ff8f86; --bad-soft:#3d2321; --band:rgba(92,196,137,.13);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#13171a; --surface:#1b2125; --ink:#e6e9eb; --muted:#9aa3ab; --line:#2e363c;
+  --accent:#f0b733; --accent-soft:#3a3018; --fit:#74b3e2;
+  --ok:#5cc489; --ok-soft:#1d3327; --bad:#ff8f86; --bad-soft:#3d2321; --band:rgba(92,196,137,.13);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 18px 60px;display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:.01em;text-wrap:balance;margin:0}
+h1{font-size:34px;line-height:1.05}
+h2{font-size:24px}
+h3{font-size:18px}
+h4{margin:0 0 4px;font-size:15px;font-weight:600}
+p{margin:0}
+.muted{color:var(--muted)}
+.num,td,input[type=number]{font-variant-numeric:tabular-nums}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+header .sub{color:var(--muted);font-size:14px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:inherit;font-size:14px;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px}
+button:hover{border-color:var(--ink)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.tabs{display:inline-flex;border:1px solid var(--ink);border-radius:7px;overflow:hidden}
+.tabs button{border:0;border-radius:0;padding:7px 14px;background:transparent}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.ghost{background:transparent}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.grid-gen{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted)}
+input,select{font:inherit;font-size:14px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:5px;padding:5px 7px;min-width:0}
+input[type=number]{font-family:var(--mono);font-size:13px}
+td input[type=number]{width:84px}
+td input.sm{width:62px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:5px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12px;background:var(--paper);vertical-align:bottom}
+th:first-child,td:first-child{text-align:left}
+td{font-family:var(--mono);font-size:13px}
+tr.grp td{border-top:2px solid var(--line)}
+tr.avg td{font-weight:600;background:var(--paper)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.row2{grid-template-columns:1fr}}
+.summary{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:16px;align-items:start}
+@media (max-width:760px){.summary{grid-template-columns:1fr}}
+.big{border-left:6px solid var(--accent);padding:4px 0 4px 14px;display:flex;flex-direction:column;gap:4px}
+.big .v{font-family:var(--display);font-size:56px;line-height:1;font-weight:600}
+.big .k{font-size:13px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;gap:6px;align-items:center;border-radius:999px;padding:3px 10px;font-size:13px;border:1px solid transparent}
+.chip.ok{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.chip.bad{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+.chip.na{background:var(--paper);color:var(--muted);border-color:var(--line)}
+.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.chart svg{width:100%;height:auto;display:block}
+.chart .cap{font-size:13px;color:var(--muted)}
+svg text{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+svg .axis{stroke:var(--muted);stroke-width:1}
+svg .grid{stroke:var(--line);stroke-width:1}
+svg .fitl{fill:none;stroke:var(--fit);stroke-width:2}
+svg .pt{fill:var(--surface);stroke:var(--ink);stroke-width:1.6}
+svg .band{fill:var(--band)}
+svg .bandl{stroke:var(--ok);stroke-width:1;stroke-dasharray:4 3;opacity:.7}
+svg .vP{stroke:var(--accent);stroke-width:2}
+svg .vabc{stroke:var(--fit);stroke-width:1;stroke-dasharray:3 3}
+svg .lblP{fill:var(--accent);font-weight:500}
+svg .lblF{fill:var(--fit)}
+svg .dotP{fill:var(--accent)}
+svg .vPf{stroke:var(--ok);stroke-width:2;stroke-dasharray:6 3}
+svg .dotPf{fill:var(--ok)}
+svg .lblPf{fill:var(--ok);font-weight:500}
+.steps{display:flex;flex-direction:column;gap:12px}
+.step{display:grid;grid-template-columns:30px 1fr;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.step:last-child{border-bottom:0}
+.step-n{font-family:var(--display);font-size:20px;color:var(--accent);font-weight:600;line-height:1.2}
+.eq{font-family:var(--mono);font-size:13.5px;background:var(--paper);border-radius:6px;padding:8px 10px;overflow-x:auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0}
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle}
+.frac>span:first-child{border-bottom:1px solid currentColor;padding:0 3px}
+.frac>span:last-child{padding:0 3px}
+.why{font-size:14px;max-width:75ch}
+.why b{color:var(--accent);font-weight:600}
+.note{font-size:13.5px;border-left:3px solid var(--accent);padding:6px 10px;background:var(--accent-soft);border-radius:0 6px 6px 0}
+.note.bad{border-color:var(--bad);background:var(--bad-soft)}
+ul.sup{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;max-width:90ch}
+.hd{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.ok-t{color:var(--ok)} .bad-t{color:var(--bad)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Diseño Marshall</h1>
+      <div class="sub">Mezcla densa en caliente · Pavimentos, segundo corte · notación del curso (Benavides, FIC)</div>
+    </div>
+    <div class="bar">
+      <div class="tabs" role="group" aria-label="Tipo de datos">
+        <button id="tab-lab" type="button">Laboratorio (briquetas)</button>
+        <button id="tab-parc" type="button">Ejercicio tipo parcial</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="bar">
+    <span class="muted" style="font-size:13px">Cargar ejemplo resuelto:</span>
+    <button type="button" id="ex-lab" class="ghost">Informe de laboratorio 7 y 8</button>
+    <button type="button" id="ex-p26" class="ghost">Examen 2026, punto 4</button>
+    <button type="button" id="ex-parc" class="ghost">Parcial 2020, punto 4</button>
+  </div>
+
+  <section class="panel" id="inputs"></section>
+  <section class="panel" id="summary"></section>
+  <section id="charts-sec" style="display:flex;flex-direction:column;gap:10px"></section>
+  <section class="panel" id="table-sec"></section>
+  <section class="panel" id="steps-sec"></section>
+  <section class="panel" id="sup-sec"></section>
+</div>
+
+<script>
+"use strict";
+/* ---------- Constantes del curso ---------- */
+const LB_KG = 0.45359237, PULG100_MM = 0.254;
+// Tabla 748-1 (INV E-748-13): volumen de la briqueta desde (cm3) -> factor. Tomada del Excel del informe.
+const T748 = [[200,5.56],[214,5],[226,4.55],[238,4.17],[251,3.85],[265,3.57],[277,3.33],[290,3.03],[302,2.78],[317,2.5],[329,2.27],[341,2.08],[354,1.92],[368,1.79],[380,1.67],[393,1.56],[406,1.47],[421,1.39],[432,1.32],[444,1.25],[457,1.19],[471,1.14],[483,1.09],[496,1.04],[509,1],[523,0.96],[536,0.93],[547,0.89],[560,0.86],[574,0.83],[586,0.81],[599,0.78],[611,0.76]];
+// Densidad relativa del agua por temperatura (Excel del informe, hoja "peso esp.")
+const DR = {18:0.9986244,19:0.9984347,20:0.9982343,21:0.9980233,22:0.9978018,23:0.9975702,24:0.9973286,25:0.997077,26:0.9968156,27:0.9965451,28:0.9962652,29:0.9959761,30:0.995678};
+// Criterios de diseño Marshall MDC (diapositivas del profe)
+const CRIT = {
+  NT1:{t:"NT1 · liviano", N:"N < 5×10⁵", golpes:50, estMin:600, flujo:[2,4], va:{rodadura:[3,5],intermedia:[4,8],base:null}, vfa:[65,80]},
+  NT2:{t:"NT2 · mediano", N:"5×10⁵ a 5×10⁶", golpes:75, estMin:750, flujo:[2,4], va:{rodadura:[3,5],intermedia:[4,8],base:[5,9]}, vfa:[65,78]},
+  NT3:{t:"NT3 · pesado", N:"N > 5×10⁶", golpes:75, estMin:900, flujo:[2,3.5], va:{rodadura:[4,6],intermedia:[4,7],base:[5,8]}, vfa:[65,75]}
+};
+const VAMMIN = {"MDC-25":14,"MDC-19":15,"MDC-10":16};
+const RFLA = [0.8,1.2];
+
+/* ---------- Ejemplos ---------- */
+function exLab(){
+  const b=(h,A,B,C,e,f)=>({h,A,B,C,est:e,flu:f,use:true});
+  return {mode:"lab", ex:"lab", Gb:1.003, gsbMode:"frac", gsbDir:"", ajuste:false, margen:0.3, estU:"lb", fluU:"in100", fracs:[{n:"Agregado 1 (grueso)",p:45.5,g:2.773},{n:"Agregado 2 (fino)",p:45.7,g:2.729},{n:"Agregado 3 (llenante)",p:8.8,g:2.875}],
+    p200:"", nt:"NT1", capa:"rodadura", grad:"MDC-19", metodo:1, pInterp:"", sel:0,
+    lab:[
+      {pb:4.5, rice:{wr:2990.4,wrm:5079.5,wrma:8656.8,wra:7372.0,te:25.0}, br:[b(6.36,1265.7,1268.7,743.4,1925,13),b(6.51,1272.1,1275.8,750.2,1720,13),b(6.23,1265.9,1266.8,751.42,2275,10.5)]},
+      {pb:5.0, rice:{wr:2989.8,wrm:5094.7,wrma:8658.9,wra:7372.1,te:24.9}, br:[b(6.30,1269.1,1271.8,754.9,2787,14),b(6.35,1265.2,1267.7,748.4,2537,10),b(6.39,1277.7,1280.4,758.0,2900,12)]},
+      {pb:5.5, rice:{wr:2989.8,wrm:5094.5,wrma:8654.1,wra:7372.0,te:25.0}, br:[b(6.31,1270.6,1273.4,752.9,2490,14),b(6.43,1270.9,1275.1,752.6,2487,12),b(6.33,1270.6,1272.6,756.2,2500,12)]},
+      {pb:6.0, rice:{wr:2989.8,wrm:5098.7,wrma:8647.6,wra:7371.7,te:25.3}, br:[b(6.29,1279.7,1280.2,762.5,1925,14),b(6.40,1281.8,1283.2,761.8,2112,17),b(6.31,1286.0,1287.0,765.9,1925,15)]},
+      {pb:6.5, rice:{wr:2989.8,wrm:5117.4,wrma:8652.8,wra:7372.1,te:24.9}, br:[b(6.43,1300.7,1301.1,772.3,1525,16),b(6.40,1296.0,1296.4,772.1,1600,17),b(6.39,1301.0,1301.7,772.8,1725,16)]}
+    ],
+    parc:[]};
+}
+function exP26(){
+  const r=(pb,est,flu,gmb,gmm)=>({pb,est,flu,gmb,gmm});
+  return {mode:"parc", ex:"p26", Gb:1.031, gsbMode:"dir", gsbDir:2.838, ajuste:false, margen:0.3, estU:"lb", fluU:"in100",
+    fracs:[{n:"Agregado 1",p:"",g:""}], p200:"", nt:"NT2", capa:"rodadura", grad:"MDC-19", metodo:1, pInterp:"", sel:0, lab:[],
+    parc:[r(4.5,2000,11,2.423,2.669),r(5.0,2170,12.5,2.444,2.642),r(5.5,2500,14,2.459,2.616),r(6.0,2675,15.2,2.492,2.592),r(6.5,2630,16.3,2.49,2.565),r(7.0,2340,17.5,2.48,2.538)]};
+}
+function exParc(){
+  return {mode:"parc", ex:"parc", Gb:1.006, gsbMode:"frac", gsbDir:"", ajuste:false, margen:0.3, estU:"lb", fluU:"in100", fracs:[{n:"Agregado grueso",p:44,g:2.694},{n:"Agregado fino",p:50.8,g:2.680},{n:"Llenante mineral",p:5.2,g:2.807}],
+    p200:"", nt:"NT2", capa:"rodadura", grad:"MDC-19", metodo:2, pInterp:5.3, sel:0, lab:[],
+    parc:[{pb:4.0,gmb:2.364,gmm:2.564,est:"",flu:""},{pb:4.5,gmb:2.378,gmm:2.543,est:"",flu:""},{pb:5.0,gmb:2.396,gmm:2.523,est:"",flu:""},{pb:5.5,gmb:2.415,gmm:2.503,est:"",flu:""},{pb:6.0,gmb:2.417,gmm:2.484,est:"",flu:""},{pb:6.5,gmb:2.411,gmm:2.464,est:"",flu:""}]};
+}
+// Valores publicados en el informe (Tabla 6) para la calibración
+const REF_LAB = {"4.5":[2.429,2.597,2.808,0.60,3.93,16.0,6.5,59.4,873,3.09],"5.0":[2.446,2.573,2.804,0.55,4.47,15.9,4.9,68.8,1243,3.05],"5.5":[2.445,2.559,2.812,0.66,4.88,16.3,4.5,72.7,1131,3.22],"6.0":[2.466,2.531,2.804,0.56,5.48,16.1,2.6,83.9,901,3.89],"6.5":[2.464,2.512,2.806,0.58,5.96,16.6,1.9,88.4,704,4.15]};
+const REF_KEYS = ["gmb","gmm","gse","pba","pbe","vam","va","vfa","est","flu"], REF_DEC=[3,3,3,2,2,1,1,1,0,2];
+
+let S = exLab();
+
+/* ---------- Utilidades ---------- */
+const $ = id => document.getElementById(id);
+const num = v => (v===""||v===null||v===undefined) ? NaN : parseFloat(String(v).replace(",","."));
+const fx = (x,d) => Number.isFinite(x) ? x.toFixed(d) : "—";
+const fr = (a,b) => `<span class="frac"><span>${a}</span><span>${b}</span></span>`;
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function factor748(V){
+  if(!(V>=200) || V>625) return null;
+  let r=null;
+  for(let i=0;i<T748.length;i++){ if(V>=T748[i][0]) r={f:T748[i][1], desde:T748[i][0], hasta:(i+1<T748.length?T748[i+1][0]-1:624)}; }
+  return r;
+}
+function drAt(T){
+  if(!(T>=18 && T<=30)) return null;
+  const t0=Math.floor(T); if(t0===30) return DR[30];
+  return DR[t0]+(T-t0)*(DR[t0+1]-DR[t0]);
+}
+function polyfit(xs,ys,deg){
+  const n=xs.length; deg=Math.min(deg,n-1); if(deg<1) return null;
+  const xm=xs.reduce((a,b)=>a+b,0)/n, m=deg+1;
+  const A=Array.from({length:m},()=>Array(m+1).fill(0));
+  for(let k=0;k<n;k++){ const u=xs[k]-xm;
+    for(let i=0;i<m;i++){ for(let j=0;j<m;j++) A[i][j]+=Math.pow(u,i+j); A[i][m]+=ys[k]*Math.pow(u,i); } }
+  for(let c=0;c<m;c++){ let p=c; for(let r=c+1;r<m;r++) if(Math.abs(A[r][c])>Math.abs(A[p][c])) p=r;
+    [A[c],A[p]]=[A[p],A[c]]; if(Math.abs(A[c][c])<1e-14) return null;
+    for(let r=0;r<m;r++){ if(r===c) continue; const f=A[r][c]/A[c][c]; for(let j=c;j<=m;j++) A[r][j]-=f*A[c][j]; } }
+  const co=A.map((row,i)=>row[m]/row[i]);
+  const f=x=>{ const u=x-xm; let s=0; for(let i=m-1;i>=0;i--) s=s*u+co[i]; return s; };
+  f.deg=deg; return f;
+}
+function gsbComb(){
+  if(S.gsbMode==="dir") return {gsb:num(S.gsbDir), dir:true, fs:[]};
+  const fs=S.fracs.filter(f=>Number.isFinite(num(f.p))&&Number.isFinite(num(f.g))&&num(f.g)>0);
+  if(!fs.length) return {gsb:NaN, fs};
+  const sp=fs.reduce((a,f)=>a+num(f.p),0), sd=fs.reduce((a,f)=>a+num(f.p)/num(f.g),0);
+  return {gsb:sp/sd, sp, sd, fs};
+}
+
+/* ---------- Cálculo ---------- */
+function compute(){
+  const R={warn:[], rows:[]};
+  const G=gsbComb(); R.G=G; const Gsb=G.gsb, Gb=num(S.Gb);
+  if(Number.isFinite(G.sp) && Math.abs(G.sp-100)>0.05) R.warn.push(`Las proporciones del agregado suman ${fx(G.sp,1)} %, no 100 %. Gsb se calcula con la suma real.`);
+  const p200=num(S.p200);
+  if(S.mode==="lab"){
+    S.lab.forEach((g,gi)=>{
+      const pb=num(g.pb); if(!Number.isFinite(pb)) return;
+      const brs=g.br.map(b=>{
+        const A=num(b.A),B=num(b.B),C=num(b.C),e=num(b.est),fl=num(b.flu);
+        const V=B-C, gmb=A/V, abs=(B-A)/V*100, F=factor748(V);
+        const eKg=F? e*LB_KG*F.f : NaN;
+        return {A,B,C,h:num(b.h),V,gmb,abs,F,e,eKg,fl,flMm:fl*PULG100_MM,use:b.use!==false};
+      });
+      const used=brs.filter(b=>b.use);
+      const avg=(arr)=>{const v=arr.filter(Number.isFinite); return v.length? v.reduce((a,b)=>a+b,0)/v.length : NaN;};
+      const gmb=avg(used.map(b=>b.gmb)), est=avg(used.map(b=>b.eKg)), flu=avg(used.map(b=>b.flMm)), fl100=avg(used.map(b=>b.fl));
+      brs.forEach((b,i)=>{ if(b.use && b.V>0 && !b.F) R.warn.push(`Briqueta ${i+1} de ${pb} %: volumen ${fx(b.V,1)} cm³ fuera de la Tabla 748-1 (200 a 624 cm³).`); });
+      const r=g.rice, wr=num(r.wr), wrm=num(r.wrm), wrma=num(r.wrma), wra=num(r.wra), te=num(r.te);
+      const wm=wrm-wr, gmm0=wm/(wm+wra-wrma), drT=drAt(te);
+      let gmm=gmm0; if(drT) gmm=gmm0*drT/DR[25]; else if(Number.isFinite(gmm0)) R.warn.push(`Rice a ${pb} %: temperatura fuera de 18 a 30 °C, Gmm sin corregir.`);
+      R.rows.push(volum({pb,gmb,gmm,est,flu,fl100,brs,rice:{wr,wrm,wrma,wra,te,wm,gmm0,drT}},Gsb,Gb,p200));
+    });
+  } else {
+    S.parc.forEach(p=>{
+      const pb=num(p.pb), gmb=num(p.gmb), gmm=num(p.gmm); if(![pb,gmb,gmm].every(Number.isFinite)) return;
+      const e0=num(p.est), f0=num(p.flu);
+      const est = S.estU==="lb"? e0/2.2 : e0, flu = S.fluU==="in100"? f0*PULG100_MM : f0;
+      R.rows.push(volum({pb,gmb,gmm,est,flu,e0,f0},Gsb,Gb,p200));
+    });
+  }
+  R.rows.sort((a,b)=>a.pb-b.pb);
+  const rows=R.rows, xs=rows.map(r=>r.pb);
+  R.ok = rows.length>=3 && Number.isFinite(Gsb) && Number.isFinite(Gb);
+  if(!R.ok) return R;
+  const fitOf=k=>{ const v=rows.filter(r=>Number.isFinite(r[k])); return v.length>=3? polyfit(v.map(r=>r.pb),v.map(r=>r[k]),3) : null; };
+  R.fit={}; ["gmb","est","flu","va","vam","vfa","pbe","rf"].forEach(k=>R.fit[k]=fitOf(k));
+  R.x0=Math.min(...xs); R.x1=Math.max(...xs);
+  const grid=[]; for(let x=R.x0; x<=R.x1+1e-9; x+=0.001) grid.push(+x.toFixed(3));
+  const argmax=f=>{ let bx=grid[0],by=-Infinity; grid.forEach(x=>{const y=f(x); if(y>by){by=y;bx=x;}}); return {x:bx, edge:(bx<=R.x0+0.0015||bx>=R.x1-0.0015)}; };
+  const C=CRIT[S.nt]; R.C=C; R.vaR=C.va[S.capa]; R.vamMin=VAMMIN[S.grad];
+  if(R.fit.gmb) R.a=argmax(R.fit.gmb);
+  if(R.fit.est) R.b=argmax(R.fit.est);
+  if(R.fit.va && R.vaR){
+    R.vaT=(R.vaR[0]+R.vaR[1])/2;
+    for(let i=1;i<grid.length;i++){ const y0=R.fit.va(grid[i-1])-R.vaT, y1=R.fit.va(grid[i])-R.vaT; if(y0===0||y0*y1<0){ R.c={x:grid[i-1]+(grid[i]-grid[i-1])*(Math.abs(y0)/(Math.abs(y0)+Math.abs(y1)))}; break; } }
+  }
+  if(S.metodo===1 && R.a && R.b && R.c){ R.Praw=(R.a.x+R.b.x+R.c.x)/3; R.P=Math.round(R.Praw*10)/10; R.met=1; }
+  else if(R.c){ R.Praw=R.c.x; R.P=Math.round(R.c.x*10)/10; R.met=2; }
+  if(Number.isFinite(R.P)){
+    const pass=c=>c.every(x=>x.ok!==false);
+    R.chk0=checks(R,R.P); R.Pf=R.P; R.chk=R.chk0;
+    if(S.ajuste){
+      const kmax=Math.round(num(S.margen)*10)||3;
+      R.cand=[]; for(let k=-kmax;k<=kmax;k++){ const p=Math.round((R.P+k*0.1)*10)/10, out=(p<R.x0-1e-9||p>R.x1+1e-9), c=out?null:checks(R,p); R.cand.push({k,p,out,c,ok:!out&&pass(c)}); }
+      if(!pass(R.chk0)){
+        const ok=R.cand.filter(c=>c.ok);
+        if(ok.length){ const dmin=Math.min(...ok.map(c=>Math.abs(c.k))); let best=ok.filter(c=>Math.abs(c.k)===dmin);
+          R.tie=best.length>1;
+          if(R.tie && R.fit.va && R.vaT!=null) best.sort((u,v)=>Math.abs(R.fit.va(u.p)-R.vaT)-Math.abs(R.fit.va(v.p)-R.vaT));
+          R.Pf=best[0].p; R.chk=best[0].c; R.adj=true; }
+        else R.noAdj=true;
+      }
+    }
+  }
+  const pi=num(S.pInterp); if(Number.isFinite(pi)) R.pi=pi;
+  return R;
+}
+function volum(o,Gsb,Gb,p200){
+  const pb=o.pb, ps=100-pb;
+  o.gse=ps/(100/o.gmm - pb/Gb);
+  o.pba=100*Gb*(o.gse-Gsb)/(Gsb*o.gse);
+  o.pbe=pb - o.pba*ps/100;
+  o.vam=100 - o.gmb*ps/Gsb;
+  o.va=100*(o.gmm-o.gmb)/o.gmm;
+  o.vfa=100*(o.vam-o.va)/o.vam;
+  o.vag=o.gmb*ps/Gsb;
+  o.rf=Number.isFinite(p200)? p200/o.pbe : NaN;
+  o.pu=o.gmb*62.4;
+  return o;
+}
+function checks(R,p){
+  const C=R.C, f=R.fit, at=k=>f[k]? f[k](p) : NaN, L=[];
+  const est=at("est"), flu=at("flu"), va=at("va"), vam=at("vam"), vfa=at("vfa"), rf=at("rf");
+  L.push({k:"Estabilidad", u:"kg", v:est, d:0, crit:`> ${C.estMin}`, ok:Number.isFinite(est)? est>C.estMin : null});
+  L.push({k:"Flujo", u:"mm", v:flu, d:2, crit:`${C.flujo[0]} a ${C.flujo[1]}`, ok:Number.isFinite(flu)? (flu>=C.flujo[0]&&flu<=C.flujo[1]) : null});
+  L.push({k:"Vacíos con aire Va", u:"%", v:va, d:1, crit:R.vaR? `${R.vaR[0]} a ${R.vaR[1]}` : "sin rango", ok:(R.vaR&&Number.isFinite(va))? (va>=R.vaR[0]&&va<=R.vaR[1]) : null});
+  L.push({k:"VAM", u:"%", v:vam, d:2, crit:`≥ ${R.vamMin}`, ok:Number.isFinite(vam)? vam>=R.vamMin : null});
+  L.push({k:"VFA", u:"%", v:vfa, d:1, crit:`${C.vfa[0]} a ${C.vfa[1]}`, ok:Number.isFinite(vfa)? (vfa>=C.vfa[0]&&vfa<=C.vfa[1]) : null});
+  L.push({k:"Llenante/ligante", u:"", v:rf, d:2, crit:`${RFLA[0]} a ${RFLA[1]}`, ok:Number.isFinite(rf)? (rf>=RFLA[0]&&rf<=RFLA[1]) : null});
+  return L;
+}
+
+/* ---------- Entradas ---------- */
+function inp(path,val,cls){ return `<input type="number" step="any" id="i-${path.replace(/\./g,"-")}" data-p="${path}" value="${val===undefined?"":esc(val)}"${cls?` class="${cls}"`:""} aria-label="${path}">`; }
+function renderInputs(){
+  $("tab-lab").setAttribute("aria-pressed", S.mode==="lab"); $("tab-parc").setAttribute("aria-pressed", S.mode==="parc");
+  const opt=(v,t,cur)=>`<option value="${v}"${String(v)===String(cur)?" selected":""}>${t}</option>`;
+  let h=`<div class="hd"><h2>Datos</h2><span class="muted" style="font-size:13px">${S.mode==="lab"?"Datos de laboratorio por briqueta, como en el informe.":"Datos por %CA como vienen en el parcial. Para hallar a y b hacen falta estabilidad y flujo."}</span></div>
+  <div class="grid-gen">
+    <label class="f">Gravedad específica del asfalto Gb ${inp("Gb",S.Gb)}</label>
+    <label class="f">Tránsito <select id="s-nt" data-s="nt">${Object.keys(CRIT).map(k=>opt(k,`${CRIT[k].t} (${CRIT[k].N})`,S.nt)).join("")}</select></label>
+    <label class="f">Capa <select id="s-capa" data-s="capa">${opt("rodadura","Rodadura",S.capa)}${opt("intermedia","Intermedia",S.capa)}${opt("base","Base",S.capa)}</select></label>
+    <label class="f">Gradación (VAM mínimo) <select id="s-grad" data-s="grad">${Object.keys(VAMMIN).map(k=>opt(k,`${k} (${VAMMIN[k]} %)`,S.grad)).join("")}</select></label>
+    <label class="f">Método del óptimo <select id="s-met" data-s="metodo">${opt(1,"Método 1: (a + b + c)/3",S.metodo)}${opt(2,"Método 2: Va promedio",S.metodo)}</select></label>
+    <label class="f">% pasa tamiz 200 (opcional) ${inp("p200",S.p200)}</label>
+    <label class="f">Mover el óptimo si no cumple <select id="s-aj" data-s="ajusteSel">${opt("0","No aplicar",S.ajuste?S.margen:"0")}${opt("0.1","Hasta ±0.1 %",S.ajuste?S.margen:"0")}${opt("0.2","Hasta ±0.2 %",S.ajuste?S.margen:"0")}${opt("0.3","Hasta ±0.3 %",S.ajuste?S.margen:"0")}</select></label>
+    <label class="f">Leer valores en Pb = (opcional) ${inp("pInterp",S.pInterp)}</label>
+  </div>
+  <div class="row2">
+    <div style="display:flex;flex-direction:column;gap:6px"><div class="hd"><h3>Agregado (Gsb)</h3><select id="s-gsb" data-s="gsbMode" aria-label="Cómo se da Gsb">${opt("dir","Valor dado (G agregado)",S.gsbMode)}${opt("frac","Por fracciones",S.gsbMode)}</select></div>
+    ${S.gsbMode==="dir"? `<label class="f" style="max-width:220px">Gsb del agregado combinado ${inp("gsbDir",S.gsbDir)}</label>` :
+    `<div class="tw"><table><thead><tr><th>Fracción</th><th>% en el agregado</th><th>Gsb de la fracción</th><th></th></tr></thead><tbody>
+    ${S.fracs.map((f,i)=>`<tr><td><input type="text" id="t-fr-${i}" data-t="fracs.${i}.n" value="${esc(f.n)}" aria-label="Nombre fracción ${i+1}" style="width:150px"></td><td>${inp(`fracs.${i}.p`,f.p)}</td><td>${inp(`fracs.${i}.g`,f.g)}</td><td><button type="button" data-act="delfr" data-i="${i}" aria-label="Quitar fracción">Quitar</button></td></tr>`).join("")}
+    </tbody></table></div><div><button type="button" data-act="addfr">Agregar fracción</button></div>`}</div>`;
+  if(S.mode==="lab"){
+    h+=`<div style="display:flex;flex-direction:column;gap:6px"><h3>Gravedad máxima Rice (INV E-735)</h3>
+    <div class="tw"><table><thead><tr><th>%CA</th><th>Recipiente Wr (g)</th><th>Rec. + mezcla (g)</th><th>Rec. + mezcla + agua (g)</th><th>Rec. + agua a Te (g)</th><th>Te (°C)</th></tr></thead><tbody>
+    ${S.lab.map((g,i)=>`<tr><td>${fx(num(g.pb),1)}</td><td>${inp(`lab.${i}.rice.wr`,g.rice.wr)}</td><td>${inp(`lab.${i}.rice.wrm`,g.rice.wrm)}</td><td>${inp(`lab.${i}.rice.wrma`,g.rice.wrma)}</td><td>${inp(`lab.${i}.rice.wra`,g.rice.wra)}</td><td>${inp(`lab.${i}.rice.te`,g.rice.te,"sm")}</td></tr>`).join("")}
+    </tbody></table></div></div></div>
+    <h3>Briquetas (3 por cada %CA)</h3>
+    <div class="tw"><table><thead><tr><th>%CA</th><th>Briq.</th><th>Espesor (cm)</th><th>Peso aire A (g)</th><th>Peso SSS B (g)</th><th>Peso agua C (g)</th><th>Estabilidad medida (lb)</th><th>Flujo (0.01")</th><th>Usar</th></tr></thead><tbody>
+    ${S.lab.map((g,i)=>g.br.map((b,j)=>`<tr class="${j===0?"grp":""}"><td>${j===0?`${inp(`lab.${i}.pb`,g.pb,"sm")} <button type="button" data-act="delpb" data-i="${i}" aria-label="Quitar este %CA">Quitar</button>`:""}</td><td>${i*3+j+1}</td><td>${inp(`lab.${i}.br.${j}.h`,b.h,"sm")}</td><td>${inp(`lab.${i}.br.${j}.A`,b.A)}</td><td>${inp(`lab.${i}.br.${j}.B`,b.B)}</td><td>${inp(`lab.${i}.br.${j}.C`,b.C)}</td><td>${inp(`lab.${i}.br.${j}.est`,b.est)}</td><td>${inp(`lab.${i}.br.${j}.flu`,b.flu,"sm")}</td><td><input type="checkbox" id="c-${i}-${j}" data-c="lab.${i}.br.${j}.use"${b.use!==false?" checked":""} aria-label="Usar briqueta ${i*3+j+1}"></td></tr>`).join("")).join("")}
+    </tbody></table></div>
+    <div class="bar"><button type="button" data-act="addpb">Agregar %CA</button><span class="muted" style="font-size:13px">Desmarca “Usar” para descartar una briqueta que se aleja de las otras dos (regla del profe).</span></div>`;
+  } else {
+    h+=`<div style="display:flex;flex-direction:column;gap:6px"><h3>Resultados por %CA</h3>
+    <div class="tw"><table><thead><tr><th>%CA</th><th>Gmb</th><th>Gmm</th><th>Estabilidad <select id="s-estu" data-s="estU" aria-label="Unidad de estabilidad">${opt("lb","lb",S.estU)}${opt("kg","kg",S.estU)}</select></th><th>Flujo <select id="s-fluu" data-s="fluU" aria-label="Unidad de flujo">${opt("in100","0.01 pulg",S.fluU)}${opt("mm","mm",S.fluU)}</select></th><th></th></tr></thead><tbody>
+    ${S.parc.map((p,i)=>`<tr><td>${inp(`parc.${i}.pb`,p.pb,"sm")}</td><td>${inp(`parc.${i}.gmb`,p.gmb)}</td><td>${inp(`parc.${i}.gmm`,p.gmm)}</td><td>${inp(`parc.${i}.est`,p.est)}</td><td>${inp(`parc.${i}.flu`,p.flu,"sm")}</td><td><button type="button" data-act="delpc" data-i="${i}">Quitar</button></td></tr>`).join("")}
+    </tbody></table></div><div><button type="button" data-act="addpc">Agregar %CA</button></div></div></div>`;
+  }
+  $("inputs").innerHTML=h;
+}
+function setPath(path,val){ const k=path.split("."); let o=S; for(let i=0;i<k.length-1;i++) o=o[k[i]]; o[k[k.length-1]]=val; }
+$("inputs").addEventListener("input",e=>{
+  const t=e.target;
+  if(t.dataset.p){ setPath(t.dataset.p, t.value); if(/^lab\.\d+\.pb$/.test(t.dataset.p)){ renderResults(); return; } renderResults(); }
+  else if(t.dataset.t){ setPath(t.dataset.t, t.value); renderResults(); }
+});
+$("inputs").addEventListener("change",e=>{
+  const t=e.target;
+  if(t.dataset.s){ const k=t.dataset.s;
+    if(k==="ajusteSel"){ S.ajuste=t.value!=="0"; if(S.ajuste) S.margen=+t.value; }
+    else S[k] = k==="metodo"? +t.value : t.value;
+    if(k==="gsbMode"){ renderAll(); return; }
+    renderResults(); }
+  if(t.dataset.c){ setPath(t.dataset.c, t.checked); renderResults(); }
+});
+$("inputs").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-act]"); if(!b) return; const i=+b.dataset.i;
+  const a=b.dataset.act;
+  if(a==="addfr") S.fracs.push({n:`Agregado ${S.fracs.length+1}`,p:"",g:""});
+  if(a==="delfr") S.fracs.splice(i,1);
+  if(a==="addpb"){ const last=S.lab[S.lab.length-1]; const pb=last? +(num(last.pb)+0.5).toFixed(1) : 4.5;
+    S.lab.push({pb, rice:{wr:"",wrm:"",wrma:"",wra:"",te:25}, br:[0,1,2].map(()=>({h:"",A:"",B:"",C:"",est:"",flu:"",use:true}))}); }
+  if(a==="delpb") S.lab.splice(i,1);
+  if(a==="addpc"){ const last=S.parc[S.parc.length-1]; S.parc.push({pb: last? +(num(last.pb)+0.5).toFixed(1):4.5, gmb:"",gmm:"",est:"",flu:""}); }
+  if(a==="delpc") S.parc.splice(i,1);
+  renderAll();
+});
+$("tab-lab").onclick=()=>{ if(S.mode!=="lab"){ S = S.lab.length? Object.assign(S,{mode:"lab"}) : exLab(); renderAll(); } };
+$("tab-parc").onclick=()=>{ if(S.mode!=="parc"){ S = S.parc.length? Object.assign(S,{mode:"parc"}) : exP26(); renderAll(); } };
+$("ex-lab").onclick=()=>{ S=exLab(); renderAll(); };
+$("ex-p26").onclick=()=>{ S=exP26(); renderAll(); };
+$("ex-parc").onclick=()=>{ S=exParc(); renderAll(); };
+
+/* ---------- Gráficas ---------- */
+function niceStep(range,n){ const raw=range/n, p=Math.pow(10,Math.floor(Math.log10(raw))), m=raw/p; return (m<1.5?1:m<3?2:m<7?5:10)*p; }
+function chart(o,R){
+  const W=340,H=235,m={l:50,r:14,t:36,b:30}, pw=W-m.l-m.r, ph=H-m.t-m.b;
+  const pts=R.rows.filter(r=>Number.isFinite(r[o.k])), fit=R.fit[o.k];
+  if(pts.length<2) return `<div class="chart"><h3>${o.t}</h3><p class="note">Faltan datos de ${o.t.toLowerCase()} para hacer esta gráfica. Ingrésalos en la tabla de datos.</p><p class="cap">${o.cap}</p></div>`;
+  const X0=R.x0-0.25, X1=R.x1+0.25;
+  let yv=pts.map(r=>r[o.k]);
+  if(fit) for(let i=0;i<=60;i++) yv.push(fit(R.x0+(R.x1-R.x0)*i/60));
+  if(o.lo!=null) yv.push(o.lo); if(o.hi!=null) yv.push(o.hi); if(o.h!=null) yv.push(o.h);
+  let y0=Math.min(...yv), y1=Math.max(...yv); const pad=(y1-y0)*0.12 || Math.abs(y1)*0.02 || 1; y0-=pad; y1+=pad;
+  const sx=x=>m.l+(x-X0)/(X1-X0)*pw, sy=y=>m.t+(y1-y)/(y1-y0)*ph;
+  const st=niceStep(y1-y0,5), dec=Math.max(0,-Math.floor(Math.log10(st)+1e-9));
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.t)} contra porcentaje de asfalto">`;
+  for(let y=Math.ceil(y0/st)*st; y<=y1+1e-9; y+=st){ s+=`<line class="grid" x1="${m.l}" x2="${W-m.r}" y1="${sy(y)}" y2="${sy(y)}"/><text x="${m.l-6}" y="${sy(y)+3}" text-anchor="end">${y.toFixed(dec)}</text>`; }
+  if(o.lo!=null||o.hi!=null){ const top=o.hi!=null? sy(Math.min(o.hi,y1)) : m.t, bot=o.lo!=null? sy(Math.max(o.lo,y0)) : m.t+ph;
+    s+=`<rect class="band" x="${m.l}" y="${top}" width="${pw}" height="${Math.max(0,bot-top)}"/>`;
+    if(o.lo!=null) s+=`<line class="bandl" x1="${m.l}" x2="${W-m.r}" y1="${sy(o.lo)}" y2="${sy(o.lo)}"/>`;
+    if(o.hi!=null) s+=`<line class="bandl" x1="${m.l}" x2="${W-m.r}" y1="${sy(o.hi)}" y2="${sy(o.hi)}"/>`; }
+  R.rows.forEach(r=>{ s+=`<text x="${sx(r.pb)}" y="${H-m.b+14}" text-anchor="middle">${r.pb.toFixed(1)}</text>`; });
+  s+=`<text x="${m.l+pw/2}" y="${H-3}" text-anchor="middle">% cemento asfáltico</text>`;
+  s+=`<line class="axis" x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${m.t+ph}"/><line class="axis" x1="${m.l}" x2="${W-m.r}" y1="${m.t+ph}" y2="${m.t+ph}"/>`;
+  if(o.h!=null){ s+=`<line class="vabc" x1="${m.l}" x2="${W-m.r}" y1="${sy(o.h)}" y2="${sy(o.h)}"/>`; }
+  if(fit){ let d=""; for(let i=0;i<=80;i++){ const x=R.x0+(R.x1-R.x0)*i/80; d+=(i?"L":"M")+sx(x).toFixed(1)+","+sy(fit(x)).toFixed(1); } s+=`<path class="fitl" d="${d}"/>`; }
+  if(o.mark && fit){ const x=o.mark.x, y=fit(x); s+=`<line class="vabc" x1="${sx(x)}" x2="${sx(x)}" y1="${sy(y)}" y2="${m.t+ph}"/><text class="lblF" x="${W-m.r}" y="25" text-anchor="end">${o.mlbl} = ${x.toFixed(2)} % (${o.mlbl==="c"?`Va = ${R.vaT} %`:"punto más alto"})</text><text class="lblF" x="${sx(x)}" y="${m.t+ph+2}" text-anchor="middle" dy="-3">${o.mlbl}</text>`; }
+  pts.forEach(r=>{ s+=`<circle class="pt" cx="${sx(r.pb)}" cy="${sy(r[o.k])}" r="3.6"/>`; });
+  if(Number.isFinite(R.P) && fit){ const y=fit(R.P), xp=sx(R.P), right=xp>m.l+pw*0.6;
+    s+=`<line class="vP" x1="${xp}" x2="${xp}" y1="${m.t}" y2="${m.t+ph}"/><circle class="dotP" cx="${xp}" cy="${sy(y)}" r="4"/>`;
+    s+=`<text class="lblP" x="${m.l}" y="11">P = ${R.P.toFixed(1)} → ${y.toFixed(o.d)} ${o.u}</text>`;
+    if(R.adj){ const yf=fit(R.Pf), xf=sx(R.Pf), rf=xf>m.l+pw*0.6;
+      s+=`<line class="vPf" x1="${xf}" x2="${xf}" y1="${m.t}" y2="${m.t+ph}"/><circle class="dotPf" cx="${xf}" cy="${sy(yf)}" r="4"/>`;
+      s+=`<text class="lblPf" x="${W-m.r}" y="11" text-anchor="end">ajustado ${R.Pf.toFixed(1)} → ${yf.toFixed(o.d)} ${o.u}</text>`; } }
+  if(Number.isFinite(R.pi) && fit && R.pi>=R.x0 && R.pi<=R.x1){ const y=fit(R.pi); s+=`<line class="vabc" x1="${sx(R.pi)}" x2="${sx(R.pi)}" y1="${sy(y)}" y2="${m.t+ph}"/><circle class="dotP" cx="${sx(R.pi)}" cy="${sy(y)}" r="3"/>`; }
+  return `<div class="chart"><h3>${o.t}</h3>${s}</svg><p class="cap">${o.cap}</p></div>`;
+}
+
+/* ---------- Resultados ---------- */
+function chip(ok,txt){ return `<span class="chip ${ok===null?"na":ok?"ok":"bad"}">${ok===null?"○":ok?"✓":"✗"} ${txt}</span>`; }
+function renderResults(){
+  const R=compute();
+  if(!R.ok){
+    $("summary").innerHTML=`<h2>Resultado</h2><p class="note bad">Faltan datos: se necesitan Gb, el agregado y al menos 3 porcentajes de asfalto completos.</p>`;
+    ["charts-sec","table-sec","steps-sec"].forEach(id=>$(id).innerHTML=""); renderSup(R); return;
+  }
+  /* Resumen */
+  let s=`<div class="hd"><h2>Resultado</h2><span class="muted" style="font-size:13px">${R.C.t} · capa ${S.capa} · ${S.grad} · ${R.C.golpes} golpes por cara</span></div>`;
+  s+=R.warn.map(w=>`<p class="note">${esc(w)}</p>`).join("");
+  s+=`<div class="summary"><div class="big">`;
+  if(Number.isFinite(R.P)){
+    s+=`<span class="k">${R.adj?"Contenido óptimo ajustado":"Contenido óptimo de asfalto"} · método ${R.met}</span><span class="v">${R.Pf.toFixed(1)} %</span>`;
+    s+= R.met===1? `<span class="k num">P = (a + b + c)/3 = (${R.a.x.toFixed(2)} + ${R.b.x.toFixed(2)} + ${R.c.x.toFixed(2)})/3 = ${R.Praw.toFixed(2)} → ${R.P.toFixed(1)} %</span>` : `<span class="k num">Pb con Va = ${R.vaT} %: ${R.Praw.toFixed(2)} → ${R.P.toFixed(1)} %</span>`;
+    if(R.adj) s+=`<span class="k">Se movió ${(R.Pf-R.P>0?"+":"−")+Math.abs(R.Pf-R.P).toFixed(1)} % desde P = ${R.P.toFixed(1)} % porque ahí no cumplía.</span>`;
+    const allOk=R.chk.every(c=>c.ok!==false);
+    s+=`<span class="${allOk?"ok-t":"bad-t"}" style="font-weight:600">${allOk?`Cumple los criterios evaluados en ${R.Pf.toFixed(1)} %`:`No cumple todos los criterios en ${R.Pf.toFixed(1)} %`}</span>`;
+    if(R.fit.pbe) s+=`<span class="k num">Pbe en ${R.Pf.toFixed(1)} % = ${R.fit.pbe(R.Pf).toFixed(2)} % (curva)</span>`;
+    if(!allOk && !S.ajuste) s+=`<span class="k">Puedes activar “Mover el óptimo si no cumple” (±0.1, ±0.2 o ±0.3 %) para buscar un Pb cercano que cumpla.</span>`;
+    if(R.noAdj) s+=`<span class="bad-t" style="font-size:13px">Ningún Pb dentro de ±${S.margen} % cumple todo.</span>`;
+  } else {
+    s+=`<span class="k">Contenido óptimo</span><span class="v">—</span><span class="k">${!R.vaR?`La tabla del profe no trae rango de Va para capa ${S.capa} en ${S.nt}.`: !R.c?`La curva de Va no llega a ${R.vaT} % dentro del rango ensayado.`:"Faltan estabilidad para el método 1."}</span>`;
+  }
+  s+=`</div><div style="display:flex;flex-direction:column;gap:10px">`;
+  if(S.metodo===1 && R.met===2) s+=`<p class="note">Sin estabilidad no se puede hallar b, así que se usa el método 2 (Pb con el Va promedio).</p>`;
+  if(R.chk){ s+=`<div class="chips">${R.chk.map(c=>chip(c.ok,`${c.k} ${fx(c.v,c.d)}${c.u?" "+c.u:""} <span class="muted">(${c.crit})</span>`)).join("")}</div>`;
+    if(R.a&&R.a.edge&&R.met===1) s+=`<p class="note">El máximo de la curva de Gmb cae en el borde del rango ensayado (${R.a.x.toFixed(2)} %). Se toma ese borde como a.</p>`; }
+  if(Number.isFinite(R.pi)){
+    const f=R.fit, inr=R.pi>=R.x0&&R.pi<=R.x1;
+    const lin=k=>{ const v=R.rows.filter(r=>Number.isFinite(r[k])); for(let i=1;i<v.length;i++) if(R.pi>=v[i-1].pb&&R.pi<=v[i].pb) return v[i-1][k]+(R.pi-v[i-1].pb)*(v[i][k]-v[i-1][k])/(v[i].pb-v[i-1].pb); return NaN; };
+    const it=[["Va","va",1,"%"],["VAM","vam",1,"%"],["VFA","vfa",1,"%"],["Gmb","gmb",3,""],["Estabilidad","est",0,"kg"],["Flujo","flu",2,"mm"]].filter(q=>f[q[1]]);
+    s+=`<div><h3>Valores en Pb = ${R.pi} %</h3>${inr?"":`<p class="note bad">Ese Pb está fuera del rango ensayado. No se extrapola.</p>`}
+      ${inr?`<div class="tw"><table><thead><tr><th>Parámetro</th><th>Curva de tendencia</th><th>Interpolación lineal</th></tr></thead><tbody>${it.map(q=>`<tr><td>${q[0]}</td><td>${fx(f[q[1]](R.pi),q[2])} ${q[3]}</td><td>${fx(lin(q[1]),q[2])} ${q[3]}</td></tr>`).join("")}</tbody></table></div>`:""}</div>`;
+  }
+  if(R.cand){
+    s+=`<div><h3>Búsqueda dentro de ±${S.margen} % alrededor de P = ${R.P.toFixed(1)} %</h3><div class="tw"><table><thead><tr><th>Parámetro</th>${R.cand.map(t=>`<th${t.p===R.Pf?' style="color:var(--ok)"':""}>${t.p.toFixed(1)}${t.k===0?" (P)":""}</th>`).join("")}</tr></thead><tbody>
+    ${R.chk0.map((c,ci)=>`<tr><td>${c.k} (${c.crit})</td>${R.cand.map(t=>{ if(t.out) return `<td class="muted">fuera</td>`; const x=t.c[ci]; return `<td class="${x.ok===null?"":x.ok?"ok-t":"bad-t"}">${fx(x.v,x.d)} ${x.ok===null?"":x.ok?"✓":"✗"}</td>`;}).join("")}</tr>`).join("")}
+    <tr class="avg"><td>¿Cumple todo?</td>${R.cand.map(t=>`<td class="${t.out?"muted":t.ok?"ok-t":"bad-t"}">${t.out?"—":t.ok?"Sí":"No"}</td>`).join("")}</tr>
+    </tbody></table></div><p class="muted" style="font-size:13px">${R.chk0.every(c=>c.ok!==false)?"P ya cumple, no hace falta moverlo.":R.adj?`Se toma el Pb que cumple más cercano a P${R.tie?"; hubo empate y se eligió el de Va más cercano al promedio":""}.`:"Ningún valor cumple con este margen; prueba con un margen mayor o revisa los datos."}</p></div>`;
+  }
+  s+=`</div></div>`;
+  if(S.ex==="lab" && S.mode==="lab") s+=calib(R);
+  if(S.ex==="p26" && S.mode==="parc" && R.c) s+=`<div class="note"><b>Comparación con tu resuelto:</b> en la hoja se tomó c = 5.7 %, pero la curva de Va cruza 4 % en ${R.c.x.toFixed(2)} %. Con ese c, P = ${R.P.toFixed(1)} %, y ahí el VFA (${fx(R.fit.vfa(R.P),1)} %) supera el máximo de 78 % de NT2. ${R.adj?` Con el ajuste queda en ${R.Pf.toFixed(1)} %, que cumple todo.`:" Por eso conviene aplicar el ajuste."}</div>`;
+  $("summary").innerHTML=s;
+
+  /* Gráficas */
+  const C=R.C;
+  const defs=[
+    {k:"gmb",t:"Gmb (densidad bulk)",u:"",d:3,mark:R.a,mlbl:"a",cap:"Sube porque el asfalto lubrica y ayuda a acomodar el agregado; cuando sobra, ocupa lugar de piedra más pesada y baja. El pico es a."},
+    {k:"est",t:"Estabilidad corregida (kg)",u:"kg",d:0,lo:C.estMin,mark:R.b,mlbl:"b",cap:`Poco asfalto: no hay pegante. Mucho: las piedras “patinan”. El pico es b. Franja verde: más de ${C.estMin} kg.`},
+    {k:"flu",t:"Flujo (mm)",u:"mm",d:2,lo:C.flujo[0],hi:C.flujo[1],cap:"Crece con el asfalto: la mezcla se vuelve más plástica. Muy bajo es frágil, muy alto se ahuella."},
+    {k:"va",t:"Vacíos con aire Va (%)",u:"%",d:1,lo:R.vaR?R.vaR[0]:null,hi:R.vaR?R.vaR[1]:null,h:R.vaT,mark:R.c,mlbl:"c",cap:R.vaR?`Baja porque el asfalto llena los huecos. c es donde la curva cruza ${R.vaT} %, el centro del rango ${R.vaR[0]} a ${R.vaR[1]} %.`:"Sin rango de Va para esta capa y tránsito."},
+    {k:"vam",t:"VAM (%)",u:"%",d:2,lo:R.vamMin,cap:`Espacio entre piedras para alojar asfalto y aire. Mínimo ${R.vamMin} % para que quepa una película de asfalto durable.`},
+    {k:"vfa",t:"VFA (%)",u:"%",d:1,lo:C.vfa[0],hi:C.vfa[1],cap:"Parte del VAM llena de asfalto. Muy alta: exudación. Muy baja: mezcla seca y poco durable."}
+  ];
+  if(R.fit.rf) defs.push({k:"rf",t:"Relación llenante/ligante",u:"",d:2,lo:RFLA[0],hi:RFLA[1],cap:"Polvo (pasa 200) por cada parte de asfalto efectivo. Cerca de 1 da una masilla rígida pero no frágil."});
+  $("charts-sec").innerHTML=`<div class="hd"><h2>Las 6 gráficas contra %CA</h2><span class="muted" style="font-size:13px">De Gmb y estabilidad se baja del punto más alto al eje x (a y b); en Va se entra con el promedio del rango (c). Curva: polinomio de grado 3. Ámbar: P${R.adj?"; verde punteado: P ajustado":""}.</span></div><div class="charts">${defs.map(o=>chart(o,R)).join("")}</div>`;
+
+  /* Tabla */
+  const hasE=R.rows.some(r=>Number.isFinite(r.est)), hasF=R.rows.some(r=>Number.isFinite(r.flu)), hasRF=R.rows.some(r=>Number.isFinite(r.rf));
+  let t=`<div class="hd"><h2>Tabla de resultados</h2><button type="button" id="copy-t">Copiar tabla</button></div><div class="tw"><table id="tres"><thead><tr><th>Pb (%)</th><th>Gmb</th><th>Gmm</th><th>Gse</th><th>Pba (%)</th><th>Pbe (%)</th><th>VAM (%)</th><th>Va (%)</th><th>VFA (%)</th>${hasRF?"<th>Llen./lig.</th>":""}${hasE?"<th>Estabilidad (kg)</th>":""}${hasF?"<th>Flujo (mm)</th>":""}</tr></thead><tbody>`;
+  R.rows.forEach(r=>{ t+=`<tr><td>${r.pb.toFixed(1)}</td><td>${fx(r.gmb,3)}</td><td>${fx(r.gmm,3)}</td><td>${fx(r.gse,3)}</td><td>${fx(r.pba,2)}</td><td>${fx(r.pbe,2)}</td><td>${fx(r.vam,1)}</td><td>${fx(r.va,1)}</td><td>${fx(r.vfa,1)}</td>${hasRF?`<td>${fx(r.rf,2)}</td>`:""}${hasE?`<td>${fx(r.est,0)}</td>`:""}${hasF?`<td>${fx(r.flu,2)}</td>`:""}</tr>`; });
+  t+=`</tbody></table></div><p class="muted" style="font-size:13px">Gsb combinada = ${fx(R.G.gsb,4)} · Gb = ${S.Gb}</p>`;
+  $("table-sec").innerHTML=t;
+  $("copy-t").onclick=e=>copyTable("tres",e.target);
+
+  renderSteps(R); renderSup(R);
+}
+function calib(R){
+  let n=0,okc=0; const bad=[];
+  R.rows.forEach(r=>{ const ref=REF_LAB[r.pb.toFixed(1)]; if(!ref) return; REF_KEYS.forEach((k,i)=>{ n++; const v=+r[k].toFixed(REF_DEC[i]); if(Math.abs(v-ref[i])<1e-9) okc++; else bad.push(`${k} a ${r.pb}%: app ${r[k].toFixed(REF_DEC[i])}, informe ${ref[i]}`); }); });
+  return `<div class="note"><b>Calibración con el informe:</b> ${okc} de ${n} valores de la Tabla 6 coinciden a la misma precisión.${bad.length?" Difieren: "+esc(bad.join("; "))+".":""} En el informe se leyó a = 6.41 a ojo en la gráfica; la curva da ${R.a?R.a.x.toFixed(2):"—"}. Con cualquiera de los dos, P redondeado es ${Number.isFinite(R.P)?R.P.toFixed(1):"—"} %, igual que el informe (5.7 %).</div>`;
+}
+async function copyTable(id,btn){
+  const tb=$(id), tsv=[...tb.rows].map(r=>[...r.cells].map(c=>c.innerText.trim()).join("\t")).join("\n");
+  const html=`<table border="1" style="border-collapse:collapse">${tb.innerHTML}</table>`;
+  try{
+    if(window.ClipboardItem && navigator.clipboard.write) await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([tsv],{type:"text/plain"})})]);
+    else await navigator.clipboard.writeText(tsv);
+    btn.textContent="Tabla copiada";
+  }catch(err){ btn.textContent="No se pudo copiar: selecciona la tabla a mano"; }
+  setTimeout(()=>{btn.textContent="Copiar tabla";},2500);
+}
+
+/* ---------- Procedimiento ---------- */
+function step(n,title,eq,why){ return `<div class="step"><div class="step-n">${n}</div><div><h4>${title}</h4>${eq?`<div class="eq">${eq}</div>`:""}${why?`<p class="why"><b>Por qué:</b> ${why}</p>`:""}</div></div>`; }
+function renderSteps(R){
+  const sel=Math.min(S.sel||0,R.rows.length-1), r=R.rows[sel], G=R.G, Gb=num(S.Gb), pb=r.pb, ps=100-pb;
+  let h=`<div class="hd"><h2>Procedimiento paso a paso</h2><label class="f" style="flex-direction:row;align-items:center;gap:8px">Cálculo tipo para Pb = <select id="s-sel">${R.rows.map((x,i)=>`<option value="${i}"${i===sel?" selected":""}>${x.pb.toFixed(1)} %</option>`).join("")}</select></label></div><div class="steps">`;
+  let n=1;
+  if(G.dir) h+=step(n++,"Gravedad específica bulk del agregado (Gsb)",`Gsb = <b>${fx(G.gsb,3)}</b> (dato del enunciado, “G agregado”) · Ps = 100 − Pb`,"es la densidad de la piedra con sus poros. Se usa en VAM y en Pba.");
+  else h+=step(n++,"Gravedad específica bulk combinada del agregado (Gsb)",
+    `Gsb = ${fr("P₁ + P₂ + … + Pₙ","P₁/G₁ + P₂/G₂ + … + Pₙ/Gₙ")} = ${fr(G.fs.map(f=>num(f.p)).join(" + "), G.fs.map(f=>`${num(f.p)}/${num(f.g)}`).join(" + "))} = <b>${fx(G.gsb,4)}</b>`,
+    "se suman volúmenes, no densidades. Cada fracción aporta un volumen P/G, así que se usa un promedio ponderado “armónico”. Si promediaras las G directamente, una fracción liviana pesaría menos de lo que ocupa.");
+  if(S.mode==="lab"){
+    h+=step(n++,"Gravedad bulk de cada briqueta (Gmb), INV E-733",
+      `Gmb = ${fr("A","B − C")}${r.brs.map((b,i)=>` &nbsp;·&nbsp; B${i+1}: ${fr(fx(b.A,1),`${fx(b.B,1)} − ${fx(b.C,1)}`)} = ${fx(b.gmb,4)}${b.use?"":" (descartada)"}`).join("")} &nbsp;→&nbsp; promedio <b>${fx(r.gmb,3)}</b>`,
+      "B − C es el volumen de la briqueta por Arquímedes. Se pesa saturada con superficie seca (B) para que el agua que entra en los poros superficiales cuente como parte del volumen de la briqueta, igual que medir una esponja con sus huecos incluidos. Las 3 briquetas se promedian (si una se aleja mucho de las otras dos, se descarta).");
+    const q=r.rice;
+    h+=step(n++,"Gravedad máxima medida (Gmm), método Rice, INV E-735",
+      `Wm = ${fx(q.wrm,1)} − ${fx(q.wr,1)} = ${fx(q.wm,1)} g &nbsp;·&nbsp; Gmm = ${fr("Wm","Wm + W(r+a) − W(r+m+a)")} = ${fr(fx(q.wm,1),`${fx(q.wm,1)} + ${fx(q.wra,1)} − ${fx(q.wrma,1)}`)} = ${fx(q.gmm0,4)}${q.drT?` &nbsp;·&nbsp; corregida: ${fx(q.gmm0,4)} × ${fr(q.drT.toFixed(7),DR[25].toFixed(7))} = <b>${fx(r.gmm,3)}</b>`:""}`,
+      `es la mezcla suelta sin una sola burbuja de aire (Va = 0): el vacío saca el aire atrapado. Sirve de techo para medir cuánto aire queda en la briqueta compactada. La corrección por temperatura existe porque el agua cambia de densidad (a ${fx(q.te,1)} °C vs. 25 °C).`);
+  } else {
+    h+=step(n++,"Gmb y Gmm",`Pb = ${pb} % → Gmb = ${fx(r.gmb,3)}, Gmm = ${fx(r.gmm,3)} (datos del enunciado)`,"en el parcial ya vienen promediados; en el laboratorio salen de pesar las briquetas y del ensayo Rice.");
+    if(Number.isFinite(r.est)||Number.isFinite(r.flu)) h+=step(n++,"Estabilidad y flujo en unidades de la tabla",
+      `${S.estU==="lb"?`Estabilidad = ${fr("lb","2.2")} = ${fr(fx(r.e0,0),"2.2")} = <b>${fx(r.est,0)} kg</b>`:`Estabilidad = <b>${fx(r.est,0)} kg</b>`} &nbsp;·&nbsp; ${S.fluU==="in100"?`Flujo = 0.254 × ${fx(r.f0,1)} = <b>${fx(r.flu,2)} mm</b>`:`Flujo = <b>${fx(r.flu,2)} mm</b>`}`,
+      "los criterios de la tabla están en kg y mm. En el examen la estabilidad se toma sin factor de volumen porque no dan las briquetas.");
+  }
+  h+=step(n++,"Gravedad específica efectiva del agregado (Gse)",
+    `Gse = ${fr("100 − Pb","100/Gmm − Pb/Gb")} = ${fr(`100 − ${pb}`,`100/${fx(r.gmm,4)} − ${pb}/${Gb}`)} = <b>${fx(r.gse,3)}</b>`,
+    "el asfalto entra en algunos poros de la piedra pero no en todos los que llena el agua. Por eso Gse queda entre Gsb y Gsa. Se despeja de Gmm porque en la mezcla suelta solo hay agregado y asfalto.");
+  h+=step(n++,"Asfalto absorbido (Pba), % del peso del agregado",
+    `Pba = 100 · ${fr("Gse − Gsb","Gse · Gsb")} · Gb = 100 · ${fr(`${fx(r.gse,4)} − ${fx(G.gsb,4)}`,`${fx(r.gse,4)} · ${fx(G.gsb,4)}`)} · ${Gb} = <b>${fx(r.pba,2)} %</b>`,
+    "es el asfalto que la piedra “se bebe”. Ese asfalto no pega nada, por eso se descuenta.");
+  h+=step(n++,"Asfalto efectivo (Pbe), % del peso de la mezcla",
+    `Pbe = Pb − ${fr("Pba · Ps","100")} = ${pb} − ${fr(`${fx(r.pba,2)} · ${fx(ps,1)}`,"100")} = <b>${fx(r.pbe,2)} %</b>`,
+    "es el asfalto que de verdad recubre y une las partículas. Ps = 100 − Pb porque Pba está referido al agregado y hay que pasarlo a peso de mezcla.");
+  h+=step(n++,"Vacíos en el agregado mineral (VAM)",
+    `VAM = 100 − ${fr("Gmb · Ps","Gsb")} = 100 − ${fr(`${fx(r.gmb,4)} · ${fx(ps,1)}`,fx(G.gsb,4))} = <b>${fx(r.vam,1)} %</b>`,
+    `Gmb·Ps/Gsb es el % del volumen ocupado por piedra; lo que sobra es el espacio entre piedras, que reparten asfalto efectivo y aire. Se usa Gsb (no Gse) porque el asfalto absorbido queda “dentro” de la piedra. Mínimo exigido: ${R.vamMin} % para ${S.grad}.`);
+  h+=step(n++,"Vacíos con aire (Va)",
+    `Va = 100 · ${fr("Gmm − Gmb","Gmm")} = 100 · ${fr(`${fx(r.gmm,4)} − ${fx(r.gmb,4)}`,fx(r.gmm,4))} = <b>${fx(r.va,1)} %</b>`,
+    "compara la briqueta compactada con la misma mezcla sin aire. Poco aire: el tránsito sigue compactando, el asfalto sube (exudación) y aparecen ahuellamientos. Mucho aire: entra agua y oxígeno y la mezcla envejece rápido.");
+  h+=step(n++,"Vacíos llenos de asfalto (VFA)",
+    `VFA = 100 · ${fr("VAM − Va","VAM")} = 100 · ${fr(`${fx(r.vam,2)} − ${fx(r.va,2)}`,fx(r.vam,2))} = <b>${fx(r.vfa,1)} %</b>`,
+    "de todo el espacio entre piedras, qué parte está llena de asfalto. Es como el nivel de un vaso: lleno de menos queda seco y poco durable; lleno de más, el asfalto rebosa (exudación).");
+  if(Number.isFinite(r.rf)) h+=step(n++,"Relación llenante/ligante",`P₀.₀₇₅ / Pbe = ${S.p200} / ${fx(r.pbe,2)} = <b>${fx(r.rf,2)}</b>`,"el polvo y el asfalto forman una masilla. Mucho polvo la vuelve frágil; poco, blanda.");
+  if(S.mode==="lab"){
+    h+=step(n++,"Estabilidad corregida (Tabla 748-1, INV E-748)",
+      r.brs.map((b,i)=>`B${i+1}: V = ${fx(b.V,1)} cm³ → factor ${b.F?b.F.f:"—"}${b.F?` (${b.F.desde} a ${b.F.hasta} cm³)`:""} → ${fx(b.e,0)} lb × 0.4536 × ${b.F?b.F.f:"—"} = ${fx(b.eKg,0)} kg${b.use?"":" (descartada)"}`).join("<br>")+`<br>Promedio: <b>${fx(r.est,0)} kg</b>`,
+      "la estabilidad se define para una briqueta estándar de 2.5\" (63.5 mm). Una más gruesa aguanta más carga solo por tener más material, así que su factor es menor que 1; una más delgada, mayor que 1. El factor se busca por volumen en la tabla, sin interpolar, como en el Excel del informe.");
+    h+=step(n++,"Flujo",`Flujo (mm) = 0.254 × flujo (0.01") → promedio ${fx(r.fl100,2)} × 0.254 = <b>${fx(r.flu,2)} mm</b>`,"es cuánto se deforma la briqueta al fallar. Se convierte a mm porque los criterios están en mm.");
+  }
+  h+=step(n++,"Curvas de tendencia",
+    `Se ajusta un polinomio de grado 3 a cada parámetro (Gmb, estabilidad, flujo, Va, VAM, VFA) contra %CA.`,
+    "los puntos de laboratorio tienen dispersión; unirlos con rectas haría que un dato raro mueva el óptimo. El profe pide curvas de tendencia, y el Excel del informe usa polinomio de grado 3.");
+  if(R.met===1){
+    h+=step(n++,"Pb óptimo, método 1",
+      `a (máxima Gmb) = ${R.a.x.toFixed(2)} % · b (máxima estabilidad) = ${R.b.x.toFixed(2)} % · c (Va = ${R.vaT} %) = ${R.c.x.toFixed(2)} %<br>P = ${fr("a + b + c","3")} = ${fr(`${R.a.x.toFixed(2)} + ${R.b.x.toFixed(2)} + ${R.c.x.toFixed(2)}`,"3")} = ${R.Praw.toFixed(3)} → <b>${R.P.toFixed(1)} %</b> (1 decimal)`,
+      "cada criterio jala hacia un lado: a busca el mejor acomodo, b la mayor resistencia y c el colchón de aire justo para que la mezcla dure. El promedio es un punto de equilibrio que luego se verifica.");
+  } else if(R.met===2){
+    h+=step(n++,"Pb óptimo, método 2 (Instituto del Asfalto)",`Pb donde la curva de Va vale ${R.vaT} % (centro de ${R.vaR[0]} a ${R.vaR[1]} %) = ${R.Praw.toFixed(3)} → <b>${R.P.toFixed(1)} %</b>`,
+      "los vacíos son el criterio que más controla la durabilidad; se fija primero y luego se revisan los demás parámetros en ese Pb.");
+  }
+  const vline=L=>L.map(c=>`${c.k}: ${fx(c.v,c.d)} ${c.u} (${c.crit}) ${c.ok===null?"no evaluado":c.ok?"cumple":"no cumple"}`).join("<br>");
+  if(R.chk0) h+=step(n++,`Verificación en P = ${R.P.toFixed(1)} %`, vline(R.chk0),
+    "se entra otra vez a las gráficas con P, se sube hasta la curva y se lee cada parámetro; luego se compara con la tabla de especificaciones MDC del tránsito y la capa.");
+  if(R.cand){
+    if(R.adj) h+=step(n++,`Ajuste del óptimo (margen ±${S.margen} %)`,
+      `Se prueban ${R.cand.filter(c=>!c.out).map(c=>c.p.toFixed(1)).join(", ")} %. Cumplen todo: ${R.cand.filter(c=>c.ok).map(c=>c.p.toFixed(1)).join(", ")} %. Más cercano a P: <b>${R.Pf.toFixed(1)} %</b><br>${vline(R.chk)}`,
+      "el óptimo promedio es un punto de partida; si un parámetro se sale del rango, se permite correr el contenido de asfalto un poco (hasta ±0.3 %) y se escoge el valor más cercano a P que cumple todas las especificaciones.");
+    else if(R.noAdj) h+=step(n++,`Ajuste del óptimo (margen ±${S.margen} %)`,`Ningún Pb entre ${(R.P-S.margen).toFixed(1)} y ${(R.P+S.margen).toFixed(1)} % cumple todo.`,"con ese margen no hay solución; prueba un margen mayor o revisa los datos.");
+  }
+  h+=`</div>`;
+  $("steps-sec").innerHTML=h;
+  $("s-sel").onchange=e=>{ S.sel=+e.target.value; renderResults(); };
+}
+
+/* ---------- Supuestos ---------- */
+function renderSup(R){
+  let l=[
+    "Criterios de diseño: tabla de las diapositivas del profe (estabilidad en kg, flujo, Va por capa, VFA, VAM mínimo por gradación).",
+    "Curvas de tendencia con polinomio de grado 3, igual que el Excel del informe. Los puntos se leen sobre la curva, no sobre los datos.",
+    "Factor de corrección de estabilidad: Tabla 748-1 por volumen de la briqueta (B − C), sin interpolar, como en el Excel. Conversión 1 lb = 0.45359237 kg; flujo 0.01\" = 0.254 mm.",
+    "Gmb, estabilidad y flujo de cada %CA: promedio simple de las briquetas marcadas como “usar”. La decisión de descartar una briqueta queda a tu criterio, como dice el profe.",
+    "Corrección del Rice por temperatura: Gmm × DR(Te)/DR(25 °C), interpolando la tabla de densidad del agua del Excel (18 a 30 °C).",
+    "Relación llenante/ligante entre 0.8 y 1.2 (valor del informe, Tabla 450-10 de INVIAS). El profe solo dice que debe ser cercana a 1.",
+    "Mover el óptimo (opcional): si P no cumple, se prueban valores cada 0.1 % dentro del margen elegido (±0.1, ±0.2 o ±0.3 %) y se toma el que cumple más cercano a P. Si hay empate, el de Va más cercano al promedio del rango (supuesto).",
+    "Modo parcial: estabilidad en kg = lb/2.2 sin factor de volumen y flujo en mm = 0.254 × lectura; Gmm se usa tal como la da el enunciado (sin corrección por temperatura).",
+    "No se extrapola: a, b, c y cualquier lectura se buscan dentro del rango de %CA ensayado."
+  ];
+  if(S.ex==="lab"&&S.mode==="lab") l.push("En el informe se verificó NT1 con 7500 N (764.8 kg) y VFA de 65 a 78 %. En la tabla del profe esos son los valores de NT2; para NT1 son 600 kg y 65 a 80 %. Con P = 5.7 % el VFA sale 78.0 %: cumple con la tabla del profe, pero quedaría justo en el límite con la del informe.");
+  if(S.ex==="p26"&&S.mode==="parc") l.push("Examen 2026: el enunciado da NT2 y capa de rodadura pero no la gradación; se asume MDC-19 (VAM mínimo 15 %). Los VAM salen cerca de 17.7 %, así que cumpliría con cualquier gradación de la tabla.");
+  if(S.ex==="parc"&&S.mode==="parc") l.push("El enunciado del parcial 2020 no da tránsito ni gradación. Se dejan NT2, rodadura y MDC-19 solo para mostrar la verificación; lo que pide el punto es VFA en 5.3 %.");
+  $("sup-sec").innerHTML=`<h2>Supuestos y criterios usados</h2><ul class="sup">${l.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+}
+
+function renderAll(){ renderInputs(); renderResults(); }
+renderAll();
+</script>
+</body>
+</html>
