@@ -1,5 +1,5 @@
 /* Service worker: precache de la app y caché en tiempo de ejecución de las fuentes de Google. */
-const VERSION = "pavimentos-v1";
+const VERSION = "pavimentos-v2";
 const CORE = ["./", "./index.html", "./marshall.html", "./manifest.json", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png"];
 
 self.addEventListener("install", e => {
